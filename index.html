@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-aG9Hn8kVYdwswFNjOWvx5Z8NTlx5er+xI0e5da6bU5M='; style-src 'sha256-h1tcU1TAm+uJJUqzc4dHU6ZYLKcKI394npykmVetw/s='; connect-src https:; img-src data:; base-uri 'none'; form-action 'none'">
+<title>DZMM</title>
+<style>html,body{margin:0;height:100%}
+body{display:flex;align-items:center;justify-content:center;background:#fff;color:#555;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{text-align:center;padding:24px}
+svg{width:56px;height:auto;display:block;margin:0 auto 16px}
+p{margin:0}
+#fail{margin-top:8px;font-size:14px}
+a{color:#FF7295;text-decoration:none}
+@media (prefers-color-scheme:dark){body{background:#111;color:#bbb}}</style>
+</head>
+<body>
+<main>
+<svg width="28" height="26" viewBox="0 0 28 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M23.8684 23.0081C22.5618 24.439 20.8921 25.2116 18.8596 25.3261L5.88 25.3379L12.3521 19.5741H13.3516H16.3516H17.3787C18.4821 19.5169 19.3967 19.1019 20.1227 18.3293C20.8486 17.5566 21.3713 16.6695 21.6907 15.6679C22.0391 14.6949 22.2133 13.6933 22.2133 12.6631C22.2133 11.6329 22.0391 10.6171 21.6907 9.61546C21.3713 8.64249 20.8486 7.76968 20.1227 6.99702C19.3967 6.22437 18.4821 5.80943 17.3787 5.75219H7.09956C6.28652 5.75219 5.88 6.13852 5.88 6.91117V14.8529H11.3521L6.35205 19.3529L0.000488281 25.3379L0 2.79035C0.029037 2.01769 0.304889 1.3595 0.827556 0.815784C1.37926 0.300681 2.04711 0.0288209 2.83111 0.000204086H18.8596C20.8921 0.114671 22.5618 0.873018 23.8684 2.27524C25.2041 3.70609 26.1478 5.32294 26.6996 7.1258C27.2803 8.92866 27.5707 10.7744 27.5707 12.6631C27.5707 14.5518 27.2803 16.3976 26.6996 18.2005C26.1188 20.0034 25.1751 21.6059 23.8684 23.0081Z" fill="#FF7295"/>
+</svg>
+<p id="wait">请稍候</p>
+<p id="fail" hidden><a id="retry" href="">重试</a> · <a href="https://dzmm-home.github.io/dzmm-addr/" rel="noopener">发布页</a> · <a href="https://dzmm.pages.dev/" rel="noopener">备用发布页</a></p>
+<noscript><p>请开启浏览器的 JavaScript，或打开 <a href="https://dzmm-home.github.io/dzmm-addr/">发布页</a>。</p></noscript>
+</main>
+<script>(function () {
+  // 主站派发池（构建时从域名登记的 rotation_domains 取，排除跳转域名自己），见 src/pool.json
+  var HOSTS = ["ceocacoser.xyz", "daxiatiankanhai.xyz", "huoacg666.com", "kobeaqy.net", "lumivale.xyz", "rushcove.xyz", "wuayewan.net"];
+  var TIMEOUT_MS = 8000;
+  var tail = location.pathname + location.search + location.hash;
+  var settled = false;
+  var failed = 0;
+
+  function go(host) {
+    if (settled) return;
+    settled = true;
+    location.replace("https://www." + host + tail);
+  }
+
+  function miss() {
+    failed += 1;
+    if (settled || failed < HOSTS.length) return;
+    settled = true;
+    document.getElementById("wait").hidden = true;
+    document.getElementById("fail").hidden = false;
+    document.getElementById("retry").href = location.href;
+  }
+
+  function probe(host) {
+    var url = "https://www." + host + "/api/heartbeat";
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.timeout = TIMEOUT_MS;
+    xhr.onload = function () {
+      var ok = false;
+      try {
+        // 只认 200、JSON、内容是 {"message":"ok"}，且没有被重定向到别处
+        var type = xhr.getResponseHeader("Content-Type") || "";
+        var body = JSON.parse(xhr.responseText);
+        ok = xhr.status === 200 && type.indexOf("json") !== -1 &&
+          body && body.message === "ok" && (!xhr.responseURL || xhr.responseURL === url);
+      } catch (e) {
+        ok = false;
+      }
+      if (ok) go(host); else miss();
+    };
+    xhr.onerror = miss;
+    xhr.ontimeout = miss;
+    xhr.onabort = miss;
+    try { xhr.send(); } catch (e) { miss(); }
+  }
+
+  if (!HOSTS.length) { miss(); return; }
+  for (var i = 0; i < HOSTS.length; i++) probe(HOSTS[i]);
+})();</script>
+</body>
+</html>

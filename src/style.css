@@ -1,0 +1,8 @@
+html,body{margin:0;height:100%}
+body{display:flex;align-items:center;justify-content:center;background:#fff;color:#555;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{text-align:center;padding:24px}
+svg{width:56px;height:auto;display:block;margin:0 auto 16px}
+p{margin:0}
+#fail{margin-top:8px;font-size:14px}
+a{color:#FF7295;text-decoration:none}
+@media (prefers-color-scheme:dark){body{background:#111;color:#bbb}}
