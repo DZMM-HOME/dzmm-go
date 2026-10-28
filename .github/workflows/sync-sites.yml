@@ -1,0 +1,64 @@
+# 候选名单自动更新（工单 studio#11007）：拉 DZMM-HOME/dzmm-addr 最新的 sites.txt，和 src/sites.txt 不一样时
+# 更新它、重新生成页面、发布到新域名（Cloudflare Pages 项目 dzmm-go）、提交并让 gaoloverai.com（GitHub Pages）重新发布；一样就什么都不做。
+# 触发：dzmm-addr 的 sites.txt 有提交时它发 repository_dispatch 过来；每小时一次定时兜底；也可以手动跑。
+# 先发 Cloudflare 再提交：发布失败时不提交，下一轮看到名单仍不同会重试；提交失败时下一轮会重新发布一次。
+name: sync-sites
+on:
+  repository_dispatch:
+    types: [sites-updated]
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: sync-sites
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: DZMM-HOME/dzmm-addr
+          path: .addr
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 比对名单
+        id: diff
+        run: |
+          addr_sha=$(git -C .addr log -1 --format=%H -- sites.txt)
+          echo "addr_sha=$addr_sha" >> "$GITHUB_OUTPUT"
+          if cmp -s .addr/sites.txt src/sites.txt; then
+            echo "名单与 dzmm-addr $addr_sha 一致，什么都不做"
+            echo "changed=no" >> "$GITHUB_OUTPUT"
+          else
+            cp .addr/sites.txt src/sites.txt
+            python3 src/build.py
+            python3 src/build.py --check
+            echo "changed=yes" >> "$GITHUB_OUTPUT"
+          fi
+      - name: 发布到 Cloudflare Pages（新域名）
+        if: steps.diff.outputs.changed == 'yes'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          mkdir -p .cf-dist && cp index.html .cf-dist/index.html
+          npx --yes wrangler@4.149.0 pages deploy .cf-dist --project-name dzmm-go --branch main --commit-dirty=true
+      - name: 提交并让 GitHub Pages 重新发布（gaoloverai.com）
+        if: steps.diff.outputs.changed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ADDR_SHA: ${{ steps.diff.outputs.addr_sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/sites.txt index.html 404.html
+          git commit -m "名单同步 dzmm-addr ${ADDR_SHA}" -m "DZMM-HOME/dzmm-addr@${ADDR_SHA} 的 sites.txt"
+          git push origin HEAD:main
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" >/dev/null

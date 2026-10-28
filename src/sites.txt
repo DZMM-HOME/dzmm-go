@@ -1,0 +1,11 @@
+daxiatiankanhai.xyz
+dzmm.ai
+dzmm.io
+huoacg666.com
+kobeaqy.net
+laopo.ai
+lumivale.xyz
+rushcove.xyz
+saibolaopo.com
+wuayewan.net
+# 本行只为首次手动验证同步 Action 的完整发布路径，下一次同步会被 dzmm-addr 的原文覆盖

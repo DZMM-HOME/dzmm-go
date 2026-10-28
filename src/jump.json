@@ -1,0 +1,4 @@
+{
+  "note": "本仓自己的跳转域名（含已停用的），构建时从 sites.txt 里排除，免得跳回自己（工单 studio#10089、#11007）",
+  "jump_domains": ["gaoloverai.com", "moonwharf.com", "qazedcx.xyz"]
+}

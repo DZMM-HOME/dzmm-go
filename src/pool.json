@@ -1,5 +1,0 @@
-{
-  "source": "域名登记 rotation_domains 视图，排除本仓的两个跳转域名（工单 studio#10089，2026-10-24）",
-  "jump_domains": ["gaoloverai.com", "qazedcx.xyz"],
-  "hosts": ["ceocacoser.xyz", "daxiatiankanhai.xyz", "huoacg666.com", "kobeaqy.net", "lumivale.xyz", "rushcove.xyz", "wuayewan.net"]
-}
